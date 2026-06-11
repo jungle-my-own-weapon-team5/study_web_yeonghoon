@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+pydantic-settings
+psycopg[binary]
+sqlalchemy
+pgvector
+langchain
+langchain-openai
+langchain-community
+langgraph
+mcp
+httpx
+pytest
+ruff

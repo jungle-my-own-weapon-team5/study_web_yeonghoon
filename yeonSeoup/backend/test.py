@@ -46,11 +46,12 @@ user = User(
 
 session.add(user)
 session.commit()
-1
+
+session.scalars(select(User).filter_by(age=30)).one()
+
 session.delete(user)
 session.commit()
 session.close()
-
 
 
 # if __name__ == "__main__":

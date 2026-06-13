@@ -1,122 +1,235 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import React, { useState } from "react";
+
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { CheckCircle2Icon } from "lucide-react";
+
+import { NavigationMenuDemo } from "./menu"
+import {RegisterForm} from "./registerform"
+
+
+import "./App.css";
+import { Toaster } from "sonner";
 
 function App() {
-  const [count, setCount] = useState(0)
+  // Type
+  type TokenResponse = {
+    access_token: string;
+    token_type: string;
+  };
+
+  const [token, setToken] = useState<TokenResponse | null>(null);
+  const [userId, setUserId] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [alarmStatus, setAlarmStatus] = useState<boolean>(false);
+  const [alarmMessage, setAlarmMessage] = useState<string>("");
+  const [registerPage,setRegisterPage] = useState<boolean>(false)
+  const [isLogin, setIsLogin] = useState<boolean>(false)
+
+
+  const loginRequest = async (
+    username: string,
+    password: string,
+  ): Promise<void> => {
+    const body = new URLSearchParams({
+      grant_type: "password",
+      username: username,
+      password: password,
+    });
+    const res = await fetch("http://localhost:8000/token", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      credentials:"include",
+      body: body,
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      setAlarmMessage(data.detail);
+      setAlarmStatus(true);
+    } else {
+      setToken(data);
+      setIsLogin((prev)=>!prev)
+    }
+  };
+
+  const login = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (userId !== "" && password !== "") {
+      loginRequest(userId, password);
+    } else {
+      setAlarmMessage("please type username or pasword");
+      setAlarmStatus(true);
+    }
+  };
+
+  const logout = () => {
+    // 토큰 무효화
+    setIsLogin((prev)=>!prev)
+  }
+
+  const getUsername = async () => {
+    const res = await fetch("http://localhost:8000/user/me", {
+      method:"GET",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      credentials:"include",
+    })
+    const data = await res.json()
+    console.log(data.user_id)
+    
+  }
 
   return (
     <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+      <div>
+        <NavigationMenuDemo isLogin={isLogin}/>
+      </div>
+      <div>
+            
+        <Toaster />
+        {
+        isLogin ?
+        
+          
+        <Card className="w-full max-w-sm ">
+          <CardHeader>
+            <CardTitle>Hello {}!</CardTitle>
+            <CardDescription>
+              Welcome
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form>
+              <div className="flex flex-col gap-6">
+                <Button
+                  onClick={getUsername}
+                  className="w-full"
+                  >
+                    유저이름 가지고오기?
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+          <CardFooter className="flex-col gap-2">
+            <Button
+              type="submit"
+              onClick={logout}
+              className="w-full"
+              disabled={alarmStatus}
+            >
+              LogOut
+            </Button>
+          </CardFooter>
+        </Card>
+        :
+        <Card className="w-full max-w-sm ">
+          <CardHeader>
+            <CardTitle>Login to your account</CardTitle>
+            <CardDescription>
+              Enter your ID below to login to your account
+            </CardDescription>
+            <CardAction>
+              <Button variant="link" onClick={()=>{setRegisterPage(!registerPage)}}>Sign Up</Button>
+            </CardAction>
+          </CardHeader>
+          <CardContent>
+            <form>
+              <div className="flex flex-col gap-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="email">ID</Label>
+                  <Input
+                    id="login_email"
+                    type="email"
+                    placeholder="ID"
+                    value={userId}
+                    onChange={(e)=>{setUserId(e.target.value);}}
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <div className="flex items-center">
+                    <Label htmlFor="password">Password</Label>
+                    <a
+                      href="#"
+                      className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
+                    >
+                      Forgot your password?
+                    </a>
+                  </div>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e)=>{setPassword(e.target.value);}}
+                    required
+                  />
+                </div>
+              </div>
+            </form>
+          </CardContent>
+          <CardFooter className="flex-col gap-2">
+            <Button
+              type="submit"
+              onClick={login}
+              className="w-full"
+              disabled={alarmStatus}
+            >
+              Login
+            </Button>
+            <Button variant="outline" className="w-full">
+              Login with Google
+            </Button>
+          </CardFooter>
+        </Card>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
 }
 
-export default App
+        {alarmStatus && (
+          <div
+            className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center select-none"
+            onClick={()=>{setAlarmStatus(!alarmStatus);}}
+          >
+            <Alert className="w-[30%]">
+              <CheckCircle2Icon />
+              <AlertTitle>Payment successful</AlertTitle>
+              <AlertDescription>{alarmMessage}</AlertDescription>
+            </Alert>
+          </div>
+        )}
+      </div>
+      {registerPage && 
+      <div 
+        className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center select-none"
+        // onClick={()=>{setRegisterPage(!registerPage)}}
+      >
+        <div 
+          className = "w-2xl"
+          // onClick={(e)=>e.stopPropagation()}
+          >
+        <RegisterForm
+          registerPage = {registerPage}
+          setRegisterPage = {setRegisterPage}
+        />
+        </div>
+      </div>}
+    </>
+  );
+}
+
+export default App;
